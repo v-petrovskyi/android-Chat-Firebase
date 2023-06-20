@@ -107,7 +107,7 @@ public class SignInActivity extends AppCompatActivity {
                                     FirebaseUser user = auth.getCurrentUser();
 //                                updateUI(user);
                                     Intent intent = new Intent(SignInActivity.this, MainActivity.class);
-                                    intent.putExtra("userName", nameEditText.getText().toString().trim());
+//                                    intent.putExtra("userName", nameEditText.getText().toString().trim());
                                     startActivity(intent);
 
                                 } else {
