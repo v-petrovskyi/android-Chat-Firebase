@@ -5,10 +5,12 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -19,17 +21,24 @@ import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 
+import com.google.android.gms.tasks.Continuation;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
+    private static String TAG = "MainActivity";
     private ListView messageListView;
     private MessageAdapter messageAdapter;
     private ProgressBar progressBar;
@@ -44,6 +53,10 @@ public class MainActivity extends AppCompatActivity {
     ChildEventListener messagesChildEventListener;
     DatabaseReference usersDatabaseReference;
     ChildEventListener usersChildEventListener;
+    private static final int RC_IMAGE_PICKER = 123;
+
+    FirebaseStorage storage;
+    StorageReference chatImagesStoragesReferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,9 +64,11 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         database = FirebaseDatabase.getInstance();
-        messagesDatabaseReference = database.getReference().child("messages");
+        storage = FirebaseStorage.getInstance();
 
-        usersDatabaseReference= database.getReference().child("users");
+        messagesDatabaseReference = database.getReference().child("messages");
+        usersDatabaseReference = database.getReference().child("users");
+        chatImagesStoragesReferences =storage.getReference().child("chat_images");
 
         progressBar = findViewById(R.id.progressBar);
         sendImageButton = findViewById(R.id.sendPhotoButton);
@@ -63,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
 //        if (intent != null) {
 //            userName = intent.getStringExtra("userName");
 //        } else {
-            userName = "Default User";
+        userName = "Default User";
 //        }
         messageListView = findViewById(R.id.messageListView);
         List<Message> messages = new ArrayList<>();
@@ -108,7 +123,10 @@ public class MainActivity extends AppCompatActivity {
         sendImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
+                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                intent.setType("image/jpeg");
+                intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
+                startActivityForResult(Intent.createChooser(intent, "Chose an image"), RC_IMAGE_PICKER);
             }
         });
 
@@ -116,7 +134,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
                 User user = snapshot.getValue(User.class);
-                if (user.getId().equals(FirebaseAuth.getInstance().getUid())){
+                if (user.getId().equals(FirebaseAuth.getInstance().getUid())) {
                     userName = user.getName();
                 }
             }
@@ -191,6 +209,45 @@ public class MainActivity extends AppCompatActivity {
             return true;
         } else {
             return super.onOptionsItemSelected(item);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == RC_IMAGE_PICKER && resultCode == RESULT_OK) {
+            Uri selectedImageUri = data.getData();
+            StorageReference imageReference = chatImagesStoragesReferences.child(selectedImageUri.getLastPathSegment());
+            UploadTask uploadTask = imageReference.putFile(selectedImageUri);
+
+//            uploadTask = imageReference.putFile(selectedImageUri);
+
+            Task<Uri> urlTask = uploadTask.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
+                @Override
+                public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
+                    if (!task.isSuccessful()) {
+                        throw task.getException();
+                    }
+
+                    // Continue with the task to get the download URL
+                    return imageReference.getDownloadUrl();
+                }
+            }).addOnCompleteListener(new OnCompleteListener<Uri>() {
+                @Override
+                public void onComplete(@NonNull Task<Uri> task) {
+                    if (task.isSuccessful()) {
+                        Log.d(TAG, "onComplete");
+                        Uri downloadUri = task.getResult();
+                        Message message = new Message();
+                        message.setImageUrl(downloadUri.toString());
+                        message.setName(userName);
+                        messagesDatabaseReference.push().setValue(message);
+                    } else {
+                        // Handle failures
+                        // ...
+                    }
+                }
+            });
         }
     }
 }
