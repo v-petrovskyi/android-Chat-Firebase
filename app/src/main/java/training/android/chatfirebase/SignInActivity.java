@@ -34,8 +34,8 @@ public class SignInActivity extends AppCompatActivity {
 
     private boolean loginModeActive;
 
-    FirebaseDatabase database;
-    DatabaseReference usersDatabaseReference;
+    private FirebaseDatabase database;
+    private DatabaseReference usersDatabaseReference;
 
 
     @Override
@@ -82,12 +82,12 @@ public class SignInActivity extends AppCompatActivity {
         });
 
         if (auth.getCurrentUser() != null) {
-            startMainActivity();
+            startActivity(new Intent(SignInActivity.this, UserListActivity.class));
         }
     }
 
     private void startMainActivity() {
-        startActivity(new Intent(SignInActivity.this, MainActivity.class));
+        startActivity(new Intent(SignInActivity.this, ChatActivity.class));
     }
 
     private void loginSignUpUser(String email, String password) {
@@ -106,7 +106,7 @@ public class SignInActivity extends AppCompatActivity {
                                     Log.d(TAG, "signInWithEmail:success");
                                     FirebaseUser user = auth.getCurrentUser();
 //                                updateUI(user);
-                                    Intent intent = new Intent(SignInActivity.this, MainActivity.class);
+                                    Intent intent = new Intent(SignInActivity.this, UserListActivity.class);
 //                                    intent.putExtra("userName", nameEditText.getText().toString().trim());
                                     startActivity(intent);
 
@@ -138,7 +138,7 @@ public class SignInActivity extends AppCompatActivity {
                                     FirebaseUser user = auth.getCurrentUser();
                                     createUser(user);
 //                            updateUI(user);
-                                    Intent intent = new Intent(SignInActivity.this, MainActivity.class);
+                                    Intent intent = new Intent(SignInActivity.this, UserListActivity.class);
                                     intent.putExtra("userName", nameEditText.getText().toString().trim());
                                     startActivity(intent);
                                 } else {
