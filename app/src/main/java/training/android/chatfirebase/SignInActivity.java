@@ -159,6 +159,7 @@ public class SignInActivity extends AppCompatActivity {
         user.setId(firebaseUser.getUid());
         user.setEmail(firebaseUser.getEmail());
         user.setName(nameEditText.getText().toString().trim());
+        user.setAvatarURL("default");
 
         usersDatabaseReference.push().setValue(user);
     }

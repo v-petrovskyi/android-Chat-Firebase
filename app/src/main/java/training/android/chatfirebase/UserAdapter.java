@@ -1,5 +1,6 @@
 package training.android.chatfirebase;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,10 +10,16 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
+import com.squareup.picasso.Callback;
+import com.squareup.picasso.Picasso;
+
 import java.util.List;
 
 public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder> {
 
+
+    private static final String TAG = "UserAdapter";
     private List<User> users;
     private OnUserClickListener listener;
 
@@ -36,7 +43,21 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     public void onBindViewHolder(@NonNull UserViewHolder holder, int position) {
         User currentUser = users.get(position);
         holder.userNameTextView.setText(currentUser.getName());
-        holder.avatarImageView.setImageResource(currentUser.getAvatarMockUpResource());
+        if(!currentUser.getAvatarURL().equals("default")){
+            Picasso.get().load(currentUser.getAvatarURL()).fit().centerInside().placeholder(R.drawable.user_image).error(R.drawable.user_image).into(holder.avatarImageView, new Callback() {
+                @Override
+                public void onSuccess() {
+                    Log.i(TAG, "onSuccess: TRUE");
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    Log.i(TAG, "onError: TRUE");
+                }
+            });
+        }
+        // todo повинно теж працювати
+//        Glide.with(holder.avatarImageView.getContext()).load(currentUser.getAvatarURL()).into(holder.avatarImageView);
 
     }
 
