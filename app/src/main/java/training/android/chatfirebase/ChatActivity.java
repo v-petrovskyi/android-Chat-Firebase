@@ -47,6 +47,8 @@ public class ChatActivity extends AppCompatActivity {
     private EditText messageEditText;
 
     private String userName;
+    private String recipientUserName;
+
     private String recipientUserId;
 
     private FirebaseAuth auth;
@@ -69,7 +71,9 @@ public class ChatActivity extends AppCompatActivity {
 
         Intent intent = getIntent();
         recipientUserId = intent.getStringExtra("recipientUserId");
+        recipientUserName = intent.getStringExtra("recipientUserName");
 
+        setTitle("Chat with " +recipientUserName);
         database = FirebaseDatabase.getInstance();
         storage = FirebaseStorage.getInstance();
 
@@ -175,10 +179,12 @@ public class ChatActivity extends AppCompatActivity {
             public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
                 Message message = snapshot.getValue(Message.class);
                 if (message.getSender().equals(auth.getCurrentUser().getUid())
-                        && message.getRecipient().equals(recipientUserId)
-                        ||
-                        message.getRecipient().equals(auth.getCurrentUser().getUid())
-                                && message.getSender().equals(recipientUserId)) {
+                        && message.getRecipient().equals(recipientUserId)) {
+                    message.setMine(true);
+                    messageAdapter.add(message);
+                } else if (message.getRecipient().equals(auth.getCurrentUser().getUid())
+                        && message.getSender().equals(recipientUserId)) {
+                    message.setMine(false);
                     messageAdapter.add(message);
                 }
             }
